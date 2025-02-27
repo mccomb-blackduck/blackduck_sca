@@ -1,48 +1,39 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
 
-# Black Duck Security Action allows you to integrate Static Analysis Security Testing (SAST) and Software Composition Analysis (SCA) into your CI/CD pipelines.
-# For more information about configuring your workflow,
-# read our documentation at https://github.com/blackduck-inc/black-duck-security-scan
-
-name: CI Black Duck security scan
+name: Synopsys Security Testing
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main" ]
-
+    branches: [ main ]
+  
+env:
+  DETECT_PROJECT_NAME: ocean_action
+  DETECT_PROJECT_VERSION_NAME: main
+  DETECT_TOOLS: DETECTOR
+  DETECT_TIMEOUT: 3000
+  
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      security-events: write
-      actions: read
-
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-      - name: install dependency
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'npm'
-      - run: npm install --no-audit --no-fund --silent
-      - name: Black Duck SCA scan
-        if: ${{ github.event_name == 'pull_request' }}
-        uses: blackduck-inc/black-duck-security-scan@805cbd09e806b01907bbea0f990723c2bb85abe9
-        env:
-          DETECT_EXCLUDED_DETECTOR_TYPES: GIT
-        with:
-          ### ---------- BLACKDUCK SCA SCANNING: REQUIRED FIELDS ----------
-          blackducksca_url: ${{ secrets.BLACKDUCK_URL }}
-          blackducksca_token: ${{ secrets.BLACKDUCK_API_TOKEN }}
-          blackduck_scan_failure_severities: 'BLOCKER,CRITICAL'
-
-
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: install dependency
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: 'npm'
+    - run: npm install --no-audit --no-fund --silent
+    - name: Black Duck PR Scan
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: synopsys-sig/synopsys-action@v1.11.0
+      env:
+        DETECT_EXCLUDED_DETECTOR_TYPES: GIT
+      with:
+        # include_diagnostic: false
+        blackduck_url: ${{ secrets.BLACKDUCK_URL }}
+        blackduck_apiToken: ${{ secrets.BLACKDUCK_API_TOKEN }}
+        blackduck_scan_full: false
+        # blackduck_automation_prcomment: false
+        github_token: ${{ secrets.GH_TOKEN }}
+    - name: mock-build
+      run: echo Should not get here
