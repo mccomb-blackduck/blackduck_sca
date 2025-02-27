@@ -1,0 +1,37 @@
+name: Synopsys Security Testing
+
+on:
+  pull_request:
+    branches: [ main ]
+  
+env:
+  DETECT_PROJECT_NAME: Daniel_PR_Test
+  DETECT_PROJECT_VERSION_NAME: main
+  DETECT_TOOLS: DETECTOR
+  DETECT_TIMEOUT: 3000
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: install dependency
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: 'npm'
+    - run: npm install --no-audit --no-fund --silent
+    - name: Black Duck PR Scan
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: synopsys-sig/synopsys-action@v1.11.0
+      env:
+        DETECT_EXCLUDED_DETECTOR_TYPES: GIT
+      with:
+        blackduck_scan_failure_severities: 'BLOCKER,CRITICAL'
+        blackduck_url: ${{ secrets.BLACKDUCK_URL }}
+        blackduck_apiToken: ${{ secrets.BLACKDUCK_API_TOKEN }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        blackducksca_fixpr_enabled: true
+    - name: mock-build
+      run: echo Should not get here
